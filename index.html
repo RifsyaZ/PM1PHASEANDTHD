@@ -179,9 +179,12 @@
     <div class="update-time" id="update-time">Terakhir diperbarui: -</div>
   </div>
 
-<script>
+  <script>
     // URL Google Sheets Anda
     const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLzDatUCJa86sgqfWywphXYDnL7GNFYrFlvV92Oy-XgThq87sKykq9TtOqVWWAucYP/exec";
+    
+    // Variabel global untuk chart
+    let voltageChart;
     
     // Fungsi untuk memformat nilai
     function formatValue(val, decimals = 2) {
@@ -216,11 +219,11 @@
       const data = await fetchData();
       if (!data) return;
       
-      // Ambil data terbaru
+      // Ambil data terbaru (indeks terakhir dalam array)
       const latestData = data[data.length - 1];
       console.log("Data terakhir:", latestData);
       
-      // Update nilai real-time sesuai dengan nama kolom di spreadsheet Anda
+      // Update nilai real-time
       document.getElementById('voltage-value').textContent = formatValue(latestData.V1);
       document.getElementById('frequency-value').textContent = formatValue(latestData.F1);
       document.getElementById('current-value').textContent = formatValue(latestData.AED1, 6);
@@ -250,11 +253,12 @@
       updateStatus('temp', latestData.T1, latestData.T2);
       updateStatus('humidity', latestData.H1, latestData.H2);
       
-      // Update grafik
+      // Update grafik dengan data historis (15 data terakhir)
       updateChart(data.slice(-15));
       
       // Update waktu terakhir
-      document.getElementById('update-time').textContent = "Terakhir diperbarui: " + new Date().toLocaleTimeString();
+      const now = new Date();
+      document.getElementById('update-time').textContent = "Terakhir diperbarui: " + now.toLocaleTimeString();
     }
     
     // Fungsi untuk update status
@@ -263,7 +267,7 @@
       const val1 = parseFloat(value1) || 0;
       const val2 = parseFloat(value2) || 0;
       
-      // Logika status
+      // Logika status sederhana (bisa disesuaikan)
       if (type === 'voltage') {
         const avg = (val1 + val2) / 2;
         if (avg < 200 || avg > 250) {
@@ -326,9 +330,14 @@
     
     // Fungsi untuk mengupdate grafik
     function updateChart(dataArray) {
-      const labels = dataArray.map((_, index) => `T-${dataArray.length - index}`);
-      const dl1Data = dataArray.map(item => parseFloat(item.V1 || item.Voltage_DL1) || 0);
-      const dl2Data = dataArray.map(item => parseFloat(item.V2 || item.Voltage_DL2) || 0);
+      const labels = dataArray.map((item, index) => {
+        // Format waktu dari timestamp
+        const date = item.Timestamp ? new Date(item.Timestamp) : new Date();
+        return date.toLocaleTimeString();
+      });
+      
+      const dl1Data = dataArray.map(item => parseFloat(item.V1) || 0);
+      const dl2Data = dataArray.map(item => parseFloat(item.V2) || 0);
       
       if (!voltageChart) {
         // Inisialisasi grafik jika belum ada
@@ -339,7 +348,7 @@
             labels: labels,
             datasets: [
               {
-                label: 'DL1',
+                label: 'DL1 Voltage',
                 data: dl1Data,
                 borderColor: '#3498db',
                 backgroundColor: 'rgba(52, 152, 219, 0.1)',
@@ -348,7 +357,7 @@
                 fill: true
               },
               {
-                label: 'DL2',
+                label: 'DL2 Voltage',
                 data: dl2Data,
                 borderColor: '#e74c3c',
                 backgroundColor: 'rgba(231, 76, 60, 0.1)',
@@ -394,6 +403,60 @@
     
     // Inisialisasi dashboard
     function initDashboard() {
+      // Inisialisasi chart terlebih dahulu
+      const ctx = document.getElementById('voltageChart').getContext('2d');
+      voltageChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'DL1 Voltage',
+              data: [],
+              borderColor: '#3498db',
+              backgroundColor: 'rgba(52, 152, 219, 0.1)',
+              borderWidth: 1,
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'DL2 Voltage',
+              data: [],
+              borderColor: '#e74c3c',
+              backgroundColor: 'rgba(231, 76, 60, 0.1)',
+              borderWidth: 1,
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: 'Tegangan (V)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Waktu'
+              }
+            }
+          }
+        }
+      });
+      
+      // Jalankan update pertama dan set interval
       updateDashboard();
       setInterval(updateDashboard, 2000); // Update setiap 2 detik
     }
