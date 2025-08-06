@@ -13,7 +13,7 @@
       background-color: #f5f5f5;
     }
     .container {
-      max-width: 800px;
+      max-width: 1200px;
       margin: 0 auto;
       background: white;
       padding: 20px;
@@ -54,6 +54,21 @@
       margin: 20px 0;
       position: relative;
       height: 200px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 10px;
+      background: white;
+    }
+    .chart-title {
+      text-align: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #333;
+    }
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
     }
     table {
       width: 100%;
@@ -88,6 +103,15 @@
       font-size: 0.8rem;
       color: #95a5a6;
       margin-top: 10px;
+    }
+    @media (max-width: 768px) {
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+      .status-bar {
+        flex-direction: column;
+        gap: 15px;
+      }
     }
   </style>
 </head>
@@ -124,13 +148,42 @@
       </div>
     </div>
     
-    <div class="chart-container">
-      <canvas id="voltageChart"></canvas>
-    </div>
-    
-    <div style="text-align: center; margin: 20px 0;">
-      <h3>Distorsi Arus</h3>
-      <div style="font-size: 2rem; font-weight: bold; color: #e74c3c;" id="distortion-value">--</div>
+    <div class="chart-grid">
+      <!-- Voltage Chart -->
+      <div class="chart-container">
+        <div class="chart-title">Tegangan (V)</div>
+        <canvas id="voltageChart"></canvas>
+      </div>
+      
+      <!-- Frequency Chart -->
+      <div class="chart-container">
+        <div class="chart-title">Frekuensi (Hz)</div>
+        <canvas id="frequencyChart"></canvas>
+      </div>
+      
+      <!-- Current Chart -->
+      <div class="chart-container">
+        <div class="chart-title">Arus (A)</div>
+        <canvas id="currentChart"></canvas>
+      </div>
+      
+      <!-- Temperature Chart -->
+      <div class="chart-container">
+        <div class="chart-title">Suhu (°C)</div>
+        <canvas id="tempChart"></canvas>
+      </div>
+      
+      <!-- Humidity Chart -->
+      <div class="chart-container">
+        <div class="chart-title">Kelembaban (%)</div>
+        <canvas id="humidityChart"></canvas>
+      </div>
+      
+      <!-- Distorsi Arus -->
+      <div class="chart-container">
+        <div class="chart-title">Distorsi Arus</div>
+        <canvas id="distortionChart"></canvas>
+      </div>
     </div>
     
     <table>
@@ -184,7 +237,7 @@
     const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLzDatUCJa86sgqfWywphXYDnL7GNFYrFlvV92Oy-XgThq87sKykq9TtOqVWWAucYP/exec";
     
     // Variabel global untuk chart
-    let voltageChart;
+    let voltageChart, frequencyChart, currentChart, tempChart, humidityChart, distortionChart;
     
     // Fungsi untuk memformat nilai
     function formatValue(val, decimals = 2) {
@@ -224,15 +277,11 @@
       console.log("Data terakhir:", latestData);
       
       // Update nilai real-time
-      // document.getElementById('voltage-value').textContent = formatValue(latestData.V1);
-      // document.getElementById('frequency-value').textContent = formatValue(latestData.F1);
-      // document.getElementById('current-value').textContent = formatValue(latestData.AED1, 6);
-      // document.getElementById('temp-value').textContent = formatValue(latestData.T1);
-      // document.getElementById('humidity-value').textContent = formatValue(latestData.H1);
-      
-      // Update nilai distorsi arus
-      const distortionValue = latestData.AED1 ? (parseFloat(latestData.AED1) * 100).toFixed(0) : '--';
-      document.getElementById('distortion-value').textContent = distortionValue;
+      document.getElementById('voltage-value').textContent = formatValue(latestData.V1);
+      document.getElementById('frequency-value').textContent = formatValue(latestData.F1);
+      document.getElementById('current-value').textContent = formatValue(latestData.AED1, 6);
+      document.getElementById('temp-value').textContent = formatValue(latestData.T1);
+      document.getElementById('humidity-value').textContent = formatValue(latestData.H1);
       
       // Update tabel parameter
       document.getElementById('dl1-voltage').textContent = formatValue(latestData.V1);
@@ -253,8 +302,8 @@
       updateStatus('temp', latestData.T1, latestData.T2);
       updateStatus('humidity', latestData.H1, latestData.H2);
       
-      // Update grafik dengan data historis (15 data terakhir)
-      updateChart(data.slice(-15));
+      // Update semua grafik dengan data historis (15 data terakhir)
+      updateCharts(data.slice(-15));
       
       // Update waktu terakhir
       const now = new Date();
@@ -328,84 +377,80 @@
       }
     }
     
-    // Fungsi untuk mengupdate grafik
-    function updateChart(dataArray) {
+    // Fungsi untuk mengupdate semua grafik
+    function updateCharts(dataArray) {
       const labels = dataArray.map((item, index) => {
         // Format waktu dari timestamp
         const date = item.Timestamp ? new Date(item.Timestamp) : new Date();
         return date.toLocaleTimeString();
       });
       
-      const dl1Data = dataArray.map(item => parseFloat(item.V1) || 0);
-      const dl2Data = dataArray.map(item => parseFloat(item.V2) || 0);
-      
+      // Initialize charts if not already initialized
       if (!voltageChart) {
-        // Inisialisasi grafik jika belum ada
-        const ctx = document.getElementById('voltageChart').getContext('2d');
-        voltageChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [
-              {
-                label: 'DL1 Voltage',
-                data: dl1Data,
-                borderColor: '#3498db',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                borderWidth: 1,
-                tension: 0.3,
-                fill: true
-              },
-              {
-                label: 'DL2 Voltage',
-                data: dl2Data,
-                borderColor: '#e74c3c',
-                backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                borderWidth: 1,
-                tension: 0.3,
-                fill: true
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'top',
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: false,
-                title: {
-                  display: true,
-                  text: 'Tegangan (V)'
-                }
-              },
-              x: {
-                title: {
-                  display: true,
-                  text: 'Waktu'
-                }
-              }
-            }
-          }
-        });
-      } else {
-        // Update data grafik yang sudah ada
-        voltageChart.data.labels = labels;
-        voltageChart.data.datasets[0].data = dl1Data;
-        voltageChart.data.datasets[1].data = dl2Data;
-        voltageChart.update();
+        initCharts();
       }
+      
+      // Update Voltage Chart
+      updateLineChart(voltageChart, 
+        labels,
+        dataArray.map(item => parseFloat(item.V1) || 0),
+        dataArray.map(item => parseFloat(item.V2) || 0),
+        'Tegangan (V)',
+        '#3498db',
+        '#e74c3c'
+      );
+      
+      // Update Frequency Chart
+      updateLineChart(frequencyChart, 
+        labels,
+        dataArray.map(item => parseFloat(item.F1) || 0),
+        dataArray.map(item => parseFloat(item.F2) || 0),
+        'Frekuensi (Hz)',
+        '#9b59b6',
+        '#3498db'
+      );
+      
+      // Update Current Chart
+      updateLineChart(currentChart, 
+        labels,
+        dataArray.map(item => parseFloat(item.AED1) || 0),
+        dataArray.map(item => parseFloat(item.AED2) || 0),
+        'Arus (A)',
+        '#e67e22',
+        '#d35400'
+      );
+      
+      // Update Temperature Chart
+      updateLineChart(tempChart, 
+        labels,
+        dataArray.map(item => parseFloat(item.T1) || 0),
+        dataArray.map(item => parseFloat(item.T2) || 0),
+        'Suhu (°C)',
+        '#e74c3c',
+        '#c0392b'
+      );
+      
+      // Update Humidity Chart
+      updateLineChart(humidityChart, 
+        labels,
+        dataArray.map(item => parseFloat(item.H1) || 0),
+        dataArray.map(item => parseFloat(item.H2) || 0),
+        'Kelembaban (%)',
+        '#3498db',
+        '#2980b9'
+      );
+      
+      // Update Distortion Chart (Gauge)
+      const latestDistortion = dataArray[dataArray.length - 1].AED1 ? 
+        (parseFloat(dataArray[dataArray.length - 1].AED1) * 100) : 0;
+      updateGaugeChart(distortionChart, latestDistortion);
     }
     
-    // Inisialisasi dashboard
-    function initDashboard() {
-      // Inisialisasi chart terlebih dahulu
-      const ctx = document.getElementById('voltageChart').getContext('2d');
-      voltageChart = new Chart(ctx, {
+    // Fungsi untuk inisialisasi semua chart
+    function initCharts() {
+      // Voltage Chart
+      const voltageCtx = document.getElementById('voltageChart').getContext('2d');
+      voltageChart = new Chart(voltageCtx, {
         type: 'line',
         data: {
           labels: [],
@@ -430,35 +475,209 @@
             }
           ]
         },
+        options: getChartOptions('Tegangan (V)')
+      });
+      
+      // Frequency Chart
+      const frequencyCtx = document.getElementById('frequencyChart').getContext('2d');
+      frequencyChart = new Chart(frequencyCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'DL1 Frequency',
+              data: [],
+              borderColor: '#9b59b6',
+              backgroundColor: 'rgba(155, 89, 182, 0.1)',
+              borderWidth: 1,
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'DL2 Frequency',
+              data: [],
+              borderColor: '#3498db',
+              backgroundColor: 'rgba(52, 152, 219, 0.1)',
+              borderWidth: 1,
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: getChartOptions('Frekuensi (Hz)')
+      });
+      
+      // Current Chart
+      const currentCtx = document.getElementById('currentChart').getContext('2d');
+      currentChart = new Chart(currentCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'DL1 Current',
+              data: [],
+              borderColor: '#e67e22',
+              backgroundColor: 'rgba(230, 126, 34, 0.1)',
+              borderWidth: 1,
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'DL2 Current',
+              data: [],
+              borderColor: '#d35400',
+              backgroundColor: 'rgba(211, 84, 0, 0.1)',
+              borderWidth: 1,
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: getChartOptions('Arus (A)')
+      });
+      
+      // Temperature Chart
+      const tempCtx = document.getElementById('tempChart').getContext('2d');
+      tempChart = new Chart(tempCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'DL1 Temperature',
+              data: [],
+              borderColor: '#e74c3c',
+              backgroundColor: 'rgba(231, 76, 60, 0.1)',
+              borderWidth: 1,
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'DL2 Temperature',
+              data: [],
+              borderColor: '#c0392b',
+              backgroundColor: 'rgba(192, 57, 43, 0.1)',
+              borderWidth: 1,
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: getChartOptions('Suhu (°C)')
+      });
+      
+      // Humidity Chart
+      const humidityCtx = document.getElementById('humidityChart').getContext('2d');
+      humidityChart = new Chart(humidityCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'DL1 Humidity',
+              data: [],
+              borderColor: '#3498db',
+              backgroundColor: 'rgba(52, 152, 219, 0.1)',
+              borderWidth: 1,
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'DL2 Humidity',
+              data: [],
+              borderColor: '#2980b9',
+              backgroundColor: 'rgba(41, 128, 185, 0.1)',
+              borderWidth: 1,
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: getChartOptions('Kelembaban (%)')
+      });
+      
+      // Distortion Chart (Gauge)
+      const distortionCtx = document.getElementById('distortionChart').getContext('2d');
+      distortionChart = new Chart(distortionCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Distorsi', ''],
+          datasets: [{
+            data: [0, 100],
+            backgroundColor: ['#e74c3c', '#f2f2f2'],
+            borderWidth: 0
+          }]
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          cutout: '70%',
+          rotation: -90,
+          circumference: 180,
           plugins: {
             legend: {
-              position: 'top',
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: false,
-              title: {
-                display: true,
-                text: 'Tegangan (V)'
-              }
+              display: false
             },
-            x: {
-              title: {
-                display: true,
-                text: 'Waktu'
-              }
+            tooltip: {
+              enabled: false
             }
           }
         }
       });
+    }
+    
+    // Fungsi untuk mendapatkan opsi chart
+    function getChartOptions(title) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: title
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Waktu'
+            }
+          }
+        }
+      };
+    }
+    
+    // Fungsi untuk update line chart
+    function updateLineChart(chart, labels, dl1Data, dl2Data, title, color1, color2) {
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = dl1Data;
+      chart.data.datasets[1].data = dl2Data;
+      chart.update();
+    }
+    
+    // Fungsi untuk update gauge chart
+    function updateGaugeChart(chart, value) {
+      chart.data.datasets[0].data = [value, 100-value];
+      chart.update();
+    }
+    
+    // Inisialisasi dashboard
+    function initDashboard() {
+      // Inisialisasi semua chart terlebih dahulu
+      initCharts();
       
       // Jalankan update pertama dan set interval
       updateDashboard();
-      setInterval(updateDashboard, 100); // Update setiap 2 detik
+      setInterval(updateDashboard, 2000); // Update setiap 2 detik
     }
     
     // Jalankan dashboard saat halaman dimuat
