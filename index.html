@@ -123,7 +123,7 @@
     <div class="status-bar">
       <div class="status-item">
         <div class="status-label"></div>
-        <div class="status-value"></div>
+        <div class="status-value" id="voltage-value"></div>
         <div class="status-label"></div>
       </div>
       <div class="status-item">
@@ -277,11 +277,11 @@
       console.log("Data terakhir:", latestData);
       
       // Update nilai real-time
-      document.getElementById('voltage-value').textContent = formatValue(latestData.V1);
-      document.getElementById('frequency-value').textContent = formatValue(latestData.F1);
-      document.getElementById('current-value').textContent = formatValue(latestData.AED1, 6);
-      document.getElementById('temp-value').textContent = formatValue(latestData.T1);
-      document.getElementById('humidity-value').textContent = formatValue(latestData.H1);
+      // document.getElementById('voltage-value').textContent = formatValue(latestData.V1);
+      // document.getElementById('frequency-value').textContent = formatValue(latestData.F1);
+      // document.getElementById('current-value').textContent = formatValue(latestData.AED1, 6);
+      // document.getElementById('temp-value').textContent = formatValue(latestData.T1);
+      // document.getElementById('humidity-value').textContent = formatValue(latestData.H1);
       
       // Update tabel parameter
       document.getElementById('dl1-voltage').textContent = formatValue(latestData.V1);
