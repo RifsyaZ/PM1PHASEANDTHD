@@ -1,81 +1,400 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Electrical Monitoring Dashboard</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Monitoring Listrik 1 Fase</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gaugeJS/dist/gauge.min.js"></script>
-  <script src="script.js" defer></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 5px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .status-item {
+      text-align: center;
+      padding: 10px;
+      min-width: 120px;
+    }
+    .status-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    .status-label {
+      font-size: 0.9rem;
+      color: #7f8c8d;
+    }
+    .chart-container {
+      margin: 20px 0;
+      position: relative;
+      height: 200px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .badge {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: white;
+    }
+    .normal {
+      background-color: #2ecc71;
+    }
+    .warning {
+      background-color: #f39c12;
+    }
+    .danger {
+      background-color: #e74c3c;
+    }
+    .update-time {
+      text-align: right;
+      font-size: 0.8rem;
+      color: #95a5a6;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-  <div class="dashboard-container">
-    <header>
-      <h1>⚡ Electrical Monitoring Dashboard</h1>
-      <div id="status">Loading data...</div>
-    </header>
-
-    <div class="main-content">
-      <div class="voltage-section">
-        <h2>Voltage Monitoring</h2>
-        <div class="voltage-display">
-          <div class="voltage-card">
-            <h3>DL1 Voltage</h3>
-            <div class="value" id="voltage-dl1">--.-- V</div>
-          </div>
-          <div class="voltage-card">
-            <h3>DL2 Voltage</h3>
-            <div class="value" id="voltage-dl2">--.-- V</div>
-          </div>
-        </div>
-        <canvas id="voltageChart"></canvas>
+  <div class="container">
+    <h1>Monitoring Listrik 1 Fase</h1>
+    <p class="subtitle">Sistem pemantauan parameter listrik real-time</p>
+    
+    <div class="status-bar">
+      <div class="status-item">
+        <div class="status-label">Tegangan (V)</div>
+        <div class="status-value" id="voltage-value">--.--</div>
+        <div class="status-label">Vavg_1</div>
       </div>
-
-      <div class="side-panel">
-        <div class="gauge-container">
-          <h2>Current Distortion (AED)</h2>
-          <canvas id="aedGauge"></canvas>
-          <div class="gauge-value" id="aed-value">0.000000 A</div>
-        </div>
-
-        <div class="frequency-section">
-          <h2>Frequency</h2>
-          <div class="frequency-display">
-            <div class="frequency-card">
-              <h3>DL1 Frequency</h3>
-              <div class="value" id="frequency-dl1">--.-- Hz</div>
-            </div>
-            <div class="frequency-card">
-              <h3>DL2 Frequency</h3>
-              <div class="value" id="frequency-dl2">--.-- Hz</div>
-            </div>
-          </div>
-        </div>
+      <div class="status-item">
+        <div class="status-label">Frekuensi (Hz)</div>
+        <div class="status-value" id="frequency-value">--.--</div>
+        <div class="status-label">Freq_1/Freq_2</div>
+      </div>
+      <div class="status-item">
+        <div class="status-label">Arus (A)</div>
+        <div class="status-value" id="current-value">--.------</div>
+        <div class="status-label">AED_1</div>
+      </div>
+      <div class="status-item">
+        <div class="status-label">Suhu (°C)</div>
+        <div class="status-value" id="temp-value">--.-</div>
+        <div class="status-label">DL1/DL2</div>
+      </div>
+      <div class="status-item">
+        <div class="status-label">Kelembaban (%)</div>
+        <div class="status-value" id="humidity-value">--.-</div>
+        <div class="status-label">DL1/DL2</div>
       </div>
     </div>
-
-    <div class="environment-section">
-      <h2>Environment Monitoring</h2>
-      <div class="environment-display">
-        <div class="environment-card">
-          <h3>DL1 Temperature</h3>
-          <div class="value" id="temp-dl1">--.- °C</div>
-        </div>
-        <div class="environment-card">
-          <h3>DL1 Humidity</h3>
-          <div class="value" id="humidity-dl1">--.- %</div>
-        </div>
-        <div class="environment-card">
-          <h3>DL2 Temperature</h3>
-          <div class="value" id="temp-dl2">--.- °C</div>
-        </div>
-        <div class="environment-card">
-          <h3>DL2 Humidity</h3>
-          <div class="value" id="humidity-dl2">--.- %</div>
-        </div>
-      </div>
+    
+    <div class="chart-container">
+      <canvas id="voltageChart"></canvas>
     </div>
+    
+    <div style="text-align: center; margin: 20px 0;">
+      <h3>Distorsi Arus</h3>
+      <div style="font-size: 2rem; font-weight: bold; color: #e74c3c;" id="distortion-value">--</div>
+    </div>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>DL1</th>
+          <th>DL2</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Tegangan (V)</td>
+          <td id="dl1-voltage">--.--</td>
+          <td id="dl2-voltage">--.--</td>
+          <td><span class="badge" id="voltage-status">-</span></td>
+        </tr>
+        <tr>
+          <td>Frekuensi (Hz)</td>
+          <td id="dl1-frequency">--.--</td>
+          <td id="dl2-frequency">--.--</td>
+          <td><span class="badge" id="frequency-status">-</span></td>
+        </tr>
+        <tr>
+          <td>Arus (A)</td>
+          <td id="dl1-current">--.------</td>
+          <td id="dl2-current">--.------</td>
+          <td><span class="badge" id="current-status">-</span></td>
+        </tr>
+        <tr>
+          <td>Suhu (°C)</td>
+          <td id="dl1-temp">--.-</td>
+          <td id="dl2-temp">--.-</td>
+          <td><span class="badge" id="temp-status">-</span></td>
+        </tr>
+        <tr>
+          <td>Kelembaban (%)</td>
+          <td id="dl1-humidity">--.-</td>
+          <td id="dl2-humidity">--.-</td>
+          <td><span class="badge" id="humidity-status">-</span></td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div class="update-time" id="update-time">Terakhir diperbarui: -</div>
   </div>
+
+  <script>
+    // URL Google Sheets Anda
+    const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLzDatUCJa86sgqfWywphXYDnL7GNFYrFlvV92Oy-XgThq87sKykq9TtOqVWWAucYP/exec";
+    
+    // Variabel global untuk chart
+    let voltageChart;
+    
+    // Fungsi untuk mengambil data dari Google Sheets
+    async function fetchData() {
+      try {
+        const response = await fetch(SHEET_URL);
+        const data = await response.json();
+        
+        if (!data || data.length === 0) {
+          console.warn("Tidak ada data yang ditemukan");
+          return null;
+        }
+        
+        return data;
+      } catch (error) {
+        console.error("Gagal mengambil data:", error);
+        document.getElementById('update-time').textContent = "Gagal memuat data: " + error.message;
+        document.getElementById('update-time').style.color = "red";
+        return null;
+      }
+    }
+    
+    // Fungsi untuk memproses dan menampilkan data
+    async function updateDashboard() {
+      const data = await fetchData();
+      if (!data) return;
+      
+      // Ambil data terbaru (indeks terakhir dalam array)
+      const latestData = data[data.length - 1];
+      
+      // Update nilai real-time
+      document.getElementById('voltage-value').textContent = latestData.V1 || '--.--';
+      document.getElementById('frequency-value').textContent = latestData.Freq1 || '--.--';
+      document.getElementById('current-value').textContent = latestData.AED1 || '--.------';
+      document.getElementById('temp-value').textContent = latestData.Tem1 || '--.-';
+      document.getElementById('humidity-value').textContent = latestData.Humidity1 || '--.-';
+      
+      // Update nilai distorsi arus
+      const distortionValue = latestData.AED1 ? (parseFloat(latestData.AED1) * 100).toFixed(0) : '--';
+      document.getElementById('distortion-value').textContent = distortionValue;
+      
+      // Update tabel parameter
+      document.getElementById('dl1-voltage').textContent = latestData.V1 || '--.--';
+      document.getElementById('dl2-voltage').textContent = latestData.V2 || '--.--';
+      document.getElementById('dl1-frequency').textContent = latestData.Freq1 || '--.--';
+      document.getElementById('dl2-frequency').textContent = latestData.Freq2 || '--.--';
+      document.getElementById('dl1-current').textContent = latestData.AED1 || '--.------';
+      document.getElementById('dl2-current').textContent = latestData.AED2 || '--.------';
+      document.getElementById('dl1-temp').textContent = latestData.Tem1 || '--.-';
+      document.getElementById('dl2-temp').textContent = latestData.Tem2 || '--.-';
+      document.getElementById('dl1-humidity').textContent = latestData.Humidity1 || '--.-';
+      document.getElementById('dl2-humidity').textContent = latestData.Humidity2 || '--.-';
+      
+      // Update status (contoh sederhana)
+      updateStatus('voltage', latestData.V1, latestData.V2);
+      updateStatus('frequency', latestData.Freq1, latestData.Freq2);
+      updateStatus('current', latestData.AED1, latestData.AED2);
+      updateStatus('temp', latestData.Tem1, latestData.Tem2);
+      updateStatus('humidity', latestData.Humidity1, latestData.Humidity2);
+      
+      // Update grafik dengan data historis (15 data terakhir)
+      updateChart(data.slice(-15));
+      
+      // Update waktu terakhir
+      const now = new Date();
+      document.getElementById('update-time').textContent = "Terakhir diperbarui: " + now.toLocaleTimeString();
+    }
+    
+    // Fungsi untuk update status
+    function updateStatus(type, value1, value2) {
+      const element = document.getElementById(type + '-status');
+      const val1 = parseFloat(value1) || 0;
+      const val2 = parseFloat(value2) || 0;
+      
+      // Logika status sederhana (bisa disesuaikan)
+      if (type === 'voltage') {
+        const avg = (val1 + val2) / 2;
+        if (avg < 200 || avg > 250) {
+          element.className = "badge danger";
+          element.textContent = "Bahaya";
+        } else if (Math.abs(val1 - val2) > 10) {
+          element.className = "badge warning";
+          element.textContent = "Peringatan";
+        } else {
+          element.className = "badge normal";
+          element.textContent = "Normal";
+        }
+      }
+      else if (type === 'frequency') {
+        const avg = (val1 + val2) / 2;
+        if (avg < 49.5 || avg > 50.5) {
+          element.className = "badge danger";
+          element.textContent = "Bahaya";
+        } else {
+          element.className = "badge normal";
+          element.textContent = "Normal";
+        }
+      }
+      else if (type === 'current') {
+        if (val1 > 5) {
+          element.className = "badge danger";
+          element.textContent = "Bahaya";
+        } else if (val1 > 1) {
+          element.className = "badge warning";
+          element.textContent = "Peringatan";
+        } else {
+          element.className = "badge normal";
+          element.textContent = "Normal";
+        }
+      }
+      else if (type === 'temp') {
+        const avg = (val1 + val2) / 2;
+        if (avg > 40) {
+          element.className = "badge danger";
+          element.textContent = "Panas";
+        } else if (avg > 35) {
+          element.className = "badge warning";
+          element.textContent = "Hangat";
+        } else {
+          element.className = "badge normal";
+          element.textContent = "Normal";
+        }
+      }
+      else if (type === 'humidity') {
+        const avg = (val1 + val2) / 2;
+        if (avg > 70 || avg < 30) {
+          element.className = "badge warning";
+          element.textContent = "Ekstrem";
+        } else {
+          element.className = "badge normal";
+          element.textContent = "Normal";
+        }
+      }
+    }
+    
+    // Fungsi untuk mengupdate grafik
+    function updateChart(dataArray) {
+      const labels = dataArray.map((_, index) => `T-${dataArray.length - index}`);
+      const dl1Data = dataArray.map(item => parseFloat(item.V1) || 0);
+      const dl2Data = dataArray.map(item => parseFloat(item.V2) || 0);
+      
+      if (!voltageChart) {
+        // Inisialisasi grafik jika belum ada
+        const ctx = document.getElementById('voltageChart').getContext('2d');
+        voltageChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'DL1',
+                data: dl1Data,
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                borderWidth: 1,
+                tension: 0.3,
+                fill: true
+              },
+              {
+                label: 'DL2',
+                data: dl2Data,
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                borderWidth: 1,
+                tension: 0.3,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top',
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                title: {
+                  display: true,
+                  text: 'Tegangan (V)'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: 'Waktu'
+                }
+              }
+            }
+          }
+        });
+      } else {
+        // Update data grafik yang sudah ada
+        voltageChart.data.labels = labels;
+        voltageChart.data.datasets[0].data = dl1Data;
+        voltageChart.data.datasets[1].data = dl2Data;
+        voltageChart.update();
+      }
+    }
+    
+    // Inisialisasi dashboard
+    function initDashboard() {
+      updateDashboard();
+      setInterval(updateDashboard, 2000); // Update setiap 2 detik
+    }
+    
+    // Jalankan dashboard saat halaman dimuat
+    window.addEventListener('DOMContentLoaded', initDashboard);
+  </script>
 </body>
 </html>
