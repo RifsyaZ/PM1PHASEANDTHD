@@ -1,193 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PM 1 Phase Dashboard</title>
-
-  <!-- Chart.js -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electrical Monitoring Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Gauge.js -->
   <script src="https://cdn.jsdelivr.net/npm/gaugeJS/dist/gauge.min.js"></script>
-
-  <!-- Style -->
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      text-align: center;
-      padding: 20px;
-    }
-
-    h1 {
-      color: #333;
-    }
-
-    .charts {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 40px;
-      margin-top: 30px;
-    }
-
-    canvas {
-      background: #fff;
-      border-radius: 8px;
-      padding: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    #status {
-      margin-top: 10px;
-      font-weight: bold;
-      color: #555;
-    }
-  </style>
+  <script src="script.js" defer></script>
 </head>
 <body>
-  <h1>⚡ Dashboard Monitoring 1 Phase PM</h1>
-  <div id="status">Loading...</div>
+  <div class="dashboard-container">
+    <header>
+      <h1>⚡ Electrical Monitoring Dashboard</h1>
+      <div id="status">Loading data...</div>
+    </header>
 
-  <div class="charts">
-    <canvas id="voltageChart" width="400" height="250"></canvas>
-    <canvas id="gauge" width="250" height="250"></canvas>
+    <div class="main-content">
+      <div class="voltage-section">
+        <h2>Voltage Monitoring</h2>
+        <div class="voltage-display">
+          <div class="voltage-card">
+            <h3>DL1 Voltage</h3>
+            <div class="value" id="voltage-dl1">--.-- V</div>
+          </div>
+          <div class="voltage-card">
+            <h3>DL2 Voltage</h3>
+            <div class="value" id="voltage-dl2">--.-- V</div>
+          </div>
+        </div>
+        <canvas id="voltageChart"></canvas>
+      </div>
+
+      <div class="side-panel">
+        <div class="gauge-container">
+          <h2>Current Distortion (AED)</h2>
+          <canvas id="aedGauge"></canvas>
+          <div class="gauge-value" id="aed-value">0.000000 A</div>
+        </div>
+
+        <div class="frequency-section">
+          <h2>Frequency</h2>
+          <div class="frequency-display">
+            <div class="frequency-card">
+              <h3>DL1 Frequency</h3>
+              <div class="value" id="frequency-dl1">--.-- Hz</div>
+            </div>
+            <div class="frequency-card">
+              <h3>DL2 Frequency</h3>
+              <div class="value" id="frequency-dl2">--.-- Hz</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="environment-section">
+      <h2>Environment Monitoring</h2>
+      <div class="environment-display">
+        <div class="environment-card">
+          <h3>DL1 Temperature</h3>
+          <div class="value" id="temp-dl1">--.- °C</div>
+        </div>
+        <div class="environment-card">
+          <h3>DL1 Humidity</h3>
+          <div class="value" id="humidity-dl1">--.- %</div>
+        </div>
+        <div class="environment-card">
+          <h3>DL2 Temperature</h3>
+          <div class="value" id="temp-dl2">--.- °C</div>
+        </div>
+        <div class="environment-card">
+          <h3>DL2 Humidity</h3>
+          <div class="value" id="humidity-dl2">--.- %</div>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <!-- Main Script -->
-  <script>
-    const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLzDatUCJa86sgqfWywphXYDnL7GNFYrFlvV92Oy-XgThq87sKykq9TtOqVWWAucYP/exec";
-
-    let voltageChart;
-    let thdGauge;
-
-    async function loadData() {
-      const statusEl = document.getElementById("status");
-      try {
-        const res = await fetch(SHEET_URL);
-        const data = await res.json();
-
-        if (!data || data.length === 0) {
-          statusEl.textContent = "Tidak ada data ditemukan.";
-          return;
-        }
-
-        const recent = data.slice(-20); // Ambil 20 data terakhir
-        const latest = data[data.length - 1];
-
-        updateChart(recent);
-        updateGauge(latest);
-
-        statusEl.textContent = "Data berhasil dimuat.";
-      } catch (err) {
-        statusEl.textContent = "❌ Gagal mengambil data.";
-        console.error(err);
-      }
-    }
-
-    function updateChart(dataArray) {
-      const labels = dataArray.map(item => item.timestamp);
-      const v1 = dataArray.map(item => parseFloat(item.V1));
-      const v2 = dataArray.map(item => parseFloat(item.V2));
-
-      voltageChart.data.labels = labels;
-      voltageChart.data.datasets[0].data = v1;
-      voltageChart.data.datasets[1].data = v2;
-      voltageChart.update();
-    }
-
-    function updateGauge(data) {
-      const thd = parseFloat(data.AED1);
-      if (thdGauge) thdGauge.set(thd);
-    }
-
-    function setupChart() {
-      const ctx = document.getElementById("voltageChart").getContext("2d");
-      voltageChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [
-            {
-              label: "Voltage 1 (V)",
-              borderColor: "blue",
-              backgroundColor: "lightblue",
-              data: [],
-              fill: false,
-              tension: 0.3
-            },
-            {
-              label: "Voltage 2 (V)",
-              borderColor: "green",
-              backgroundColor: "lightgreen",
-              data: [],
-              fill: false,
-              tension: 0.3
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Voltage (V)'
-              }
-            },
-            x: {
-              title: {
-                display: true,
-                text: 'Waktu'
-              }
-            }
-          }
-        }
-      });
-    }
-
-    function setupGauge() {
-      const opts = {
-        angle: 0, 
-        lineWidth: 0.3,
-        radiusScale: 0.9,
-        pointer: {
-          length: 0.6,
-          strokeWidth: 0.04,
-          color: '#000'
-        },
-        staticLabels: {
-          font: "10px sans-serif",
-          labels: [0, 25, 50, 75, 100],
-          color: "#000",
-          fractionDigits: 0
-        },
-        limitMax: false,
-        limitMin: false,
-        colorStart: '#6FADCF',
-        colorStop: '#8FC0DA',
-        strokeColor: '#E0E0E0',
-        generateGradient: true,
-        highDpiSupport: true
-      };
-
-      const target = document.getElementById('gauge');
-      thdGauge = new Gauge(target).setOptions(opts);
-      thdGauge.maxValue = 100;
-      thdGauge.setMinValue(0);
-      thdGauge.animationSpeed = 32;
-      thdGauge.set(0);
-    }
-
-    window.onload = () => {
-      setupChart();
-      setupGauge();
-      loadData();
-      setInterval(loadData, 1000); // Update tiap 1 detik
-    };
-  </script>
 </body>
 </html>
