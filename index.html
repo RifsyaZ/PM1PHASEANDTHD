@@ -179,12 +179,9 @@
     <div class="update-time" id="update-time">Terakhir diperbarui: -</div>
   </div>
 
-  <script>
+<script>
     // URL Google Sheets Anda
     const SHEET_URL = "https://script.google.com/macros/s/AKfycbzLzDatUCJa86sgqfWywphXYDnL7GNFYrFlvV92Oy-XgThq87sKykq9TtOqVWWAucYP/exec";
-    
-    // Variabel global untuk chart
-    let voltageChart;
     
     // Fungsi untuk memformat nilai
     function formatValue(val, decimals = 2) {
@@ -204,9 +201,7 @@
           return null;
         }
         
-        // Debug: Tampilkan data mentah di console
         console.log("Data dari Sheets:", data);
-        
         return data;
       } catch (error) {
         console.error("Gagal mengambil data:", error);
@@ -221,49 +216,45 @@
       const data = await fetchData();
       if (!data) return;
       
-      // Ambil data terbaru (indeks terakhir dalam array)
+      // Ambil data terbaru
       const latestData = data[data.length - 1];
-      
-      // Debug: Tampilkan data terakhir di console
       console.log("Data terakhir:", latestData);
       
-      // Update nilai real-time dengan fallback untuk berbagai format nama kolom
-      document.getElementById('voltage-value').textContent = formatValue(latestData.V1 || latestData.Voltage_DL1);
-      document.getElementById('frequency-value').textContent = formatValue(latestData.Freq1 || latestData.Frequency_DL1);
-      document.getElementById('current-value').textContent = formatValue(latestData.AED1 || latestData.Current_DL1, 6);
-      document.getElementById('temp-value').textContent = formatValue(latestData.Tem1 || latestData.Temp_DL1);
-      document.getElementById('humidity-value').textContent = formatValue(latestData.Humidity1 || latestData.Humidity_DL1);
+      // Update nilai real-time sesuai dengan nama kolom di spreadsheet Anda
+      document.getElementById('voltage-value').textContent = formatValue(latestData.V1);
+      document.getElementById('frequency-value').textContent = formatValue(latestData.F1);
+      document.getElementById('current-value').textContent = formatValue(latestData.AED1, 6);
+      document.getElementById('temp-value').textContent = formatValue(latestData.T1);
+      document.getElementById('humidity-value').textContent = formatValue(latestData.H1);
       
       // Update nilai distorsi arus
-      const currentValue = latestData.AED1 || latestData.Current_DL1 || 0;
-      const distortionValue = currentValue !== '---' ? (parseFloat(currentValue) * 100).toFixed(0) : '--';
+      const distortionValue = latestData.AED1 ? (parseFloat(latestData.AED1) * 100).toFixed(0) : '--';
       document.getElementById('distortion-value').textContent = distortionValue;
       
-      // Update tabel parameter dengan fallback untuk berbagai format nama kolom
-      document.getElementById('dl1-voltage').textContent = formatValue(latestData.V1 || latestData.Voltage_DL1);
-      document.getElementById('dl2-voltage').textContent = formatValue(latestData.V2 || latestData.Voltage_DL2);
-      document.getElementById('dl1-frequency').textContent = formatValue(latestData.Freq1 || latestData.Frequency_DL1);
-      document.getElementById('dl2-frequency').textContent = formatValue(latestData.Freq2 || latestData.Frequency_DL2);
-      document.getElementById('dl1-current').textContent = formatValue(latestData.AED1 || latestData.Current_DL1, 6);
-      document.getElementById('dl2-current').textContent = formatValue(latestData.AED2 || latestData.Current_DL2, 6);
-      document.getElementById('dl1-temp').textContent = formatValue(latestData.Tem1 || latestData.Temp_DL1);
-      document.getElementById('dl2-temp').textContent = formatValue(latestData.Tem2 || latestData.Temp_DL2);
-      document.getElementById('dl1-humidity').textContent = formatValue(latestData.Humidity1 || latestData.Humidity_DL1);
-      document.getElementById('dl2-humidity').textContent = formatValue(latestData.Humidity2 || latestData.Humidity_DL2);
+      // Update tabel parameter
+      document.getElementById('dl1-voltage').textContent = formatValue(latestData.V1);
+      document.getElementById('dl2-voltage').textContent = formatValue(latestData.V2);
+      document.getElementById('dl1-frequency').textContent = formatValue(latestData.F1);
+      document.getElementById('dl2-frequency').textContent = formatValue(latestData.F2);
+      document.getElementById('dl1-current').textContent = formatValue(latestData.AED1, 6);
+      document.getElementById('dl2-current').textContent = formatValue(latestData.AED2, 6);
+      document.getElementById('dl1-temp').textContent = formatValue(latestData.T1);
+      document.getElementById('dl2-temp').textContent = formatValue(latestData.T2);
+      document.getElementById('dl1-humidity').textContent = formatValue(latestData.H1);
+      document.getElementById('dl2-humidity').textContent = formatValue(latestData.H2);
       
       // Update status
-      updateStatus('voltage', latestData.V1 || latestData.Voltage_DL1, latestData.V2 || latestData.Voltage_DL2);
-      updateStatus('frequency', latestData.Freq1 || latestData.Frequency_DL1, latestData.Freq2 || latestData.Frequency_DL2);
-      updateStatus('current', latestData.AED1 || latestData.Current_DL1, latestData.AED2 || latestData.Current_DL2);
-      updateStatus('temp', latestData.Tem1 || latestData.Temp_DL1, latestData.Tem2 || latestData.Temp_DL2);
-      updateStatus('humidity', latestData.Humidity1 || latestData.Humidity_DL1, latestData.Humidity2 || latestData.Humidity_DL2);
+      updateStatus('voltage', latestData.V1, latestData.V2);
+      updateStatus('frequency', latestData.F1, latestData.F2);
+      updateStatus('current', latestData.AED1, latestData.AED2);
+      updateStatus('temp', latestData.T1, latestData.T2);
+      updateStatus('humidity', latestData.H1, latestData.H2);
       
-      // Update grafik dengan data historis (15 data terakhir)
+      // Update grafik
       updateChart(data.slice(-15));
       
       // Update waktu terakhir
-      const now = new Date();
-      document.getElementById('update-time').textContent = "Terakhir diperbarui: " + now.toLocaleTimeString();
+      document.getElementById('update-time').textContent = "Terakhir diperbarui: " + new Date().toLocaleTimeString();
     }
     
     // Fungsi untuk update status
