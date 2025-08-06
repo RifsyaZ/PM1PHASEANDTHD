@@ -186,6 +186,13 @@
     // Variabel global untuk chart
     let voltageChart;
     
+    // Fungsi untuk memformat nilai
+    function formatValue(val, decimals = 2) {
+      if (val === null || val === undefined || val === '' || val === '---') return '---';
+      const num = parseFloat(val);
+      return isNaN(num) ? '---' : num.toFixed(decimals);
+    }
+    
     // Fungsi untuk mengambil data dari Google Sheets
     async function fetchData() {
       try {
@@ -196,6 +203,9 @@
           console.warn("Tidak ada data yang ditemukan");
           return null;
         }
+        
+        // Debug: Tampilkan data mentah di console
+        console.log("Data dari Sheets:", data);
         
         return data;
       } catch (error) {
@@ -214,35 +224,39 @@
       // Ambil data terbaru (indeks terakhir dalam array)
       const latestData = data[data.length - 1];
       
-      // Update nilai real-time
-      document.getElementById('voltage-value').textContent = latestData.V1 || '--.--';
-      document.getElementById('frequency-value').textContent = latestData.Freq1 || '--.--';
-      document.getElementById('current-value').textContent = latestData.AED1 || '--.------';
-      document.getElementById('temp-value').textContent = latestData.Tem1 || '--.-';
-      document.getElementById('humidity-value').textContent = latestData.Humidity1 || '--.-';
+      // Debug: Tampilkan data terakhir di console
+      console.log("Data terakhir:", latestData);
+      
+      // Update nilai real-time dengan fallback untuk berbagai format nama kolom
+      document.getElementById('voltage-value').textContent = formatValue(latestData.V1 || latestData.Voltage_DL1);
+      document.getElementById('frequency-value').textContent = formatValue(latestData.Freq1 || latestData.Frequency_DL1);
+      document.getElementById('current-value').textContent = formatValue(latestData.AED1 || latestData.Current_DL1, 6);
+      document.getElementById('temp-value').textContent = formatValue(latestData.Tem1 || latestData.Temp_DL1);
+      document.getElementById('humidity-value').textContent = formatValue(latestData.Humidity1 || latestData.Humidity_DL1);
       
       // Update nilai distorsi arus
-      const distortionValue = latestData.AED1 ? (parseFloat(latestData.AED1) * 100).toFixed(0) : '--';
+      const currentValue = latestData.AED1 || latestData.Current_DL1 || 0;
+      const distortionValue = currentValue !== '---' ? (parseFloat(currentValue) * 100).toFixed(0) : '--';
       document.getElementById('distortion-value').textContent = distortionValue;
       
-      // Update tabel parameter
-      document.getElementById('dl1-voltage').textContent = latestData.V1 || '--.--';
-      document.getElementById('dl2-voltage').textContent = latestData.V2 || '--.--';
-      document.getElementById('dl1-frequency').textContent = latestData.Freq1 || '--.--';
-      document.getElementById('dl2-frequency').textContent = latestData.Freq2 || '--.--';
-      document.getElementById('dl1-current').textContent = latestData.AED1 || '--.------';
-      document.getElementById('dl2-current').textContent = latestData.AED2 || '--.------';
-      document.getElementById('dl1-temp').textContent = latestData.Tem1 || '--.-';
-      document.getElementById('dl2-temp').textContent = latestData.Tem2 || '--.-';
-      document.getElementById('dl1-humidity').textContent = latestData.Humidity1 || '--.-';
-      document.getElementById('dl2-humidity').textContent = latestData.Humidity2 || '--.-';
+      // Update tabel parameter dengan fallback untuk berbagai format nama kolom
+      document.getElementById('dl1-voltage').textContent = formatValue(latestData.V1 || latestData.Voltage_DL1);
+      document.getElementById('dl2-voltage').textContent = formatValue(latestData.V2 || latestData.Voltage_DL2);
+      document.getElementById('dl1-frequency').textContent = formatValue(latestData.Freq1 || latestData.Frequency_DL1);
+      document.getElementById('dl2-frequency').textContent = formatValue(latestData.Freq2 || latestData.Frequency_DL2);
+      document.getElementById('dl1-current').textContent = formatValue(latestData.AED1 || latestData.Current_DL1, 6);
+      document.getElementById('dl2-current').textContent = formatValue(latestData.AED2 || latestData.Current_DL2, 6);
+      document.getElementById('dl1-temp').textContent = formatValue(latestData.Tem1 || latestData.Temp_DL1);
+      document.getElementById('dl2-temp').textContent = formatValue(latestData.Tem2 || latestData.Temp_DL2);
+      document.getElementById('dl1-humidity').textContent = formatValue(latestData.Humidity1 || latestData.Humidity_DL1);
+      document.getElementById('dl2-humidity').textContent = formatValue(latestData.Humidity2 || latestData.Humidity_DL2);
       
-      // Update status (contoh sederhana)
-      updateStatus('voltage', latestData.V1, latestData.V2);
-      updateStatus('frequency', latestData.Freq1, latestData.Freq2);
-      updateStatus('current', latestData.AED1, latestData.AED2);
-      updateStatus('temp', latestData.Tem1, latestData.Tem2);
-      updateStatus('humidity', latestData.Humidity1, latestData.Humidity2);
+      // Update status
+      updateStatus('voltage', latestData.V1 || latestData.Voltage_DL1, latestData.V2 || latestData.Voltage_DL2);
+      updateStatus('frequency', latestData.Freq1 || latestData.Frequency_DL1, latestData.Freq2 || latestData.Frequency_DL2);
+      updateStatus('current', latestData.AED1 || latestData.Current_DL1, latestData.AED2 || latestData.Current_DL2);
+      updateStatus('temp', latestData.Tem1 || latestData.Temp_DL1, latestData.Tem2 || latestData.Temp_DL2);
+      updateStatus('humidity', latestData.Humidity1 || latestData.Humidity_DL1, latestData.Humidity2 || latestData.Humidity_DL2);
       
       // Update grafik dengan data historis (15 data terakhir)
       updateChart(data.slice(-15));
@@ -258,7 +272,7 @@
       const val1 = parseFloat(value1) || 0;
       const val2 = parseFloat(value2) || 0;
       
-      // Logika status sederhana (bisa disesuaikan)
+      // Logika status
       if (type === 'voltage') {
         const avg = (val1 + val2) / 2;
         if (avg < 200 || avg > 250) {
@@ -322,8 +336,8 @@
     // Fungsi untuk mengupdate grafik
     function updateChart(dataArray) {
       const labels = dataArray.map((_, index) => `T-${dataArray.length - index}`);
-      const dl1Data = dataArray.map(item => parseFloat(item.V1) || 0);
-      const dl2Data = dataArray.map(item => parseFloat(item.V2) || 0);
+      const dl1Data = dataArray.map(item => parseFloat(item.V1 || item.Voltage_DL1) || 0);
+      const dl2Data = dataArray.map(item => parseFloat(item.V2 || item.Voltage_DL2) || 0);
       
       if (!voltageChart) {
         // Inisialisasi grafik jika belum ada
